@@ -86,4 +86,17 @@ func TestClient(t *testing.T) {
 
 		assert.Equal(t, false, transport.ForceAttemptHTTP2)
 	})
+
+	t.Run("WithCustomTransport", func(t *testing.T) {
+		t.Parallel()
+
+		customTransport := &http.Transport{
+			MaxIdleConns:    200,
+			IdleConnTimeout: 30 * time.Second,
+		}
+
+		httpClient := New(WithTransport(customTransport))
+
+		assert.Equal(t, customTransport, httpClient.Transport)
+	})
 }
