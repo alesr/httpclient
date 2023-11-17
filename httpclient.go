@@ -8,14 +8,15 @@ import (
 
 // Client struct holds the configurations for the HTTP client.
 type Client struct {
-	Timeout               time.Duration // Time limit for requests made by this Client.
-	DialerTimeout         time.Duration // Maximum amount of time a dial will wait for a connect to complete.
-	DialerKeepAlive       time.Duration // Interval between keep-alive probes for an active network connection.
-	TLSHandshakeTimeout   time.Duration // Time spent waiting for a TLS handshake.
-	ResponseHeaderTimeout time.Duration // Time to wait for a server's response headers.
-	IdleConnTimeout       time.Duration // Maximum amount of time an idle (keep-alive) connection will remain idle before closing itself.
-	MaxIdleConns          int           // Maximum number of idle (keep-alive) connections across all hosts.
-	ForceAttemptHTTP2     bool          // If true, HTTP/2 is enabled for this transport.
+	Timeout               time.Duration   // Time limit for requests made by this Client.
+	DialerTimeout         time.Duration   // Maximum amount of time a dial will wait for a connect to complete.
+	DialerKeepAlive       time.Duration   // Interval between keep-alive probes for an active network connection.
+	TLSHandshakeTimeout   time.Duration   // Time spent waiting for a TLS handshake.
+	ResponseHeaderTimeout time.Duration   // Time to wait for a server's response headers.
+	IdleConnTimeout       time.Duration   // Maximum amount of time an idle (keep-alive) connection will remain idle before closing itself.
+	MaxIdleConns          int             // Maximum number of idle (keep-alive) connections across all hosts.
+	ForceAttemptHTTP2     bool            // If true, HTTP/2 is enabled for this transport.
+	Transport             *http.Transport // Transport to be used by the client.
 }
 
 // optionFunc defines the type of function that can be used to modify the configuration.
@@ -77,6 +78,13 @@ func WithForceHTTP2Disabled() optionFunc {
 	}
 }
 
+// WithTransport sets the custom transport for the HTTP client.
+func WithTransport(transport *http.Transport) optionFunc {
+	return func(c *Client) {
+		c.Transport = transport
+	}
+}
+
 // New creates a new HTTP client with the provided options.
 // If no options are provided, a client with default settings is returned.
 func New(options ...optionFunc) *http.Client {
@@ -95,22 +103,28 @@ func New(options ...optionFunc) *http.Client {
 		option(&c)
 	}
 
-	dialer := &net.Dialer{
-		Timeout:   c.DialerTimeout,
-		KeepAlive: c.DialerKeepAlive,
-	}
+	var transport *http.Transport
+	if c.Transport != nil {
+		transport = c.Transport
+	} else {
+		// Initialize default transport settings
+		dialer := net.Dialer{
+			Timeout:   c.DialerTimeout,
+			KeepAlive: c.DialerKeepAlive,
+		}
 
-	transport := http.Transport{
-		DialContext:           dialer.DialContext,
-		TLSHandshakeTimeout:   c.TLSHandshakeTimeout,
-		ResponseHeaderTimeout: c.ResponseHeaderTimeout,
-		IdleConnTimeout:       c.IdleConnTimeout,
-		MaxIdleConns:          c.MaxIdleConns,
-		ForceAttemptHTTP2:     c.ForceAttemptHTTP2,
+		transport = &http.Transport{
+			DialContext:           dialer.DialContext,
+			TLSHandshakeTimeout:   c.TLSHandshakeTimeout,
+			ResponseHeaderTimeout: c.ResponseHeaderTimeout,
+			IdleConnTimeout:       c.IdleConnTimeout,
+			MaxIdleConns:          c.MaxIdleConns,
+			ForceAttemptHTTP2:     c.ForceAttemptHTTP2,
+		}
 	}
 
 	return &http.Client{
 		Timeout:   c.Timeout,
-		Transport: &transport,
+		Transport: transport,
 	}
 }
