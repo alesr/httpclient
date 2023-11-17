@@ -50,6 +50,21 @@ Each option modifies a different part of the HTTP client configuration:
 - `WithMaxIdleConns`: sets the maximum number of idle connections.
 - `WithForceHTTP2Disabled`: disables HTTP2 for the transport of the HTTP client.
 
+### Custom Transport
+
+To use a custom transport, provide it using the WithTransport option. Note that when using a custom transport, other transport-specific options (like WithTLSHandshakeTimeout) will not apply. Ensure that your custom transport is fully configured before passing it:
+
+```go
+customTransport := &http.Transport{
+    // Custom transport settings...
+}
+client := httpclient.New(
+    httpclient.WithTransport(customTransport),
+)
+```
+
+### Using the Client
+
 After creating the client, you can use it to make HTTP requests as you would with the standard `net/http` package:
 
 ```go
